@@ -6,7 +6,8 @@ SOURCES += \
     $$PWD/form_capacity_bar.cpp \
     $$PWD/form_fading_button.cpp \
     $$PWD/form_collapsed_widget.cpp \
-    $$PWD/form_qt_message.cpp
+    $$PWD/form_qt_message.cpp \
+    $$PWD/form_qt_message_ex.cpp
 
 HEADERS  += \
     $$PWD/include/form_loading_spinner.h \
@@ -14,10 +15,12 @@ HEADERS  += \
     $$PWD/include/form_capacity_bar.h \
     $$PWD/form_fading_button.h \
     $$PWD/include/form_collapsed_widget.h \
-    $$PWD/include/form_qt_message.h
+    $$PWD/include/form_qt_message.h \
+    $$PWD/include/form_qt_message_ex.h
 
 FORMS += \
-    $$PWD/form_qt_message.ui
+    $$PWD/form_qt_message.ui \
+    $$PWD/form_qt_message_ex.ui
 
 DISTFILES += \
     $$PWD/copy_reference_files.bat \
