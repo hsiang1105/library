@@ -68,6 +68,11 @@ int Property::Id() const
     return d_->id;
 }
 
+int Property::Station() const
+{
+    return d_->station;
+}
+
 std::string Property::Name() const
 {
     return d_->name;
@@ -113,6 +118,11 @@ int Property::UserValue(int index) const
 void Property::SetId(int id)
 {
     d_->id = id;
+}
+
+void Property::SetStation(int station)
+{
+    d_->station = station;
 }
 
 void Property::SetName(const std::string &name)

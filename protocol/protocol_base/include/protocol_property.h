@@ -17,6 +17,7 @@ public:
     Property &operator=(const Property &other);
 
     int Id() const;
+    int Station() const;
     std::string Name() const;
     uint32_t Function() const;
     ElementArray Elements() const;
@@ -33,6 +34,7 @@ public:
     int UserValue(int index = 0) const;
 
     void SetId(int id);
+    void SetStation(int station);
     void SetName(const std::string &name);
     void SetFunction(uint32_t function);
     void SetElements(const ElementArray &elements);

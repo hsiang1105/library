@@ -137,6 +137,16 @@ uint32_t Protocol::Array2Value(const ByteArray &array,
     return value;
 }
 
+void Protocol::AppendValue(ByteArray &result,
+                           uint32_t value,
+                           int size,
+                           Protocol::ByteOrder endian,
+                           bool ascii_flag)
+{
+    ByteArray array = Value2Array(value, size, endian, ascii_flag);
+    result.insert(result.end(), array.begin(), array.end());
+}
+
 uint16_t Protocol::Checksum(const char *start, int offset, int len)
 {
     const char *data = start + offset;
