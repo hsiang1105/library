@@ -1,5 +1,8 @@
 INCLUDEPATH += $$PWD/
 
+HEADERS  += \
+            $$PWD/security_center.h
+
 CONFIG(debug, debug|release) {
     LIBS += $$PWD/../../lib/libSecurityd.a
     PRE_TARGETDEPS += $$PWD/../../lib/libSecurityd.a
