@@ -1,5 +1,5 @@
-#ifndef FBS_PROTOCOL_H
-#define FBS_PROTOCOL_H
+#ifndef FATEK_ASCII_PROTOCOL_H
+#define FATEK_ASCII_PROTOCOL_H
 
 #include "abstract_protocol.h"
 
@@ -11,12 +11,12 @@ public:
     FatekAsciiProtocol();
     ~FatekAsciiProtocol();
 
-    Result GenerateRequest(const Property &prop) override;
-    Result HandleResponse(const Property &prop,
-                          const ByteArray &response) override;
+    ReturnData GenerateRequest(const Property &prop) override;
+    ReturnData HandleResponse(const Property &prop,
+                              const VecU8 &response) override;
 
     int ExpectedResponseLength(const Property &prop) override;
-    bool IsTerminated(const ByteArray &response) override;
+    bool IsTerminated(const VecU8 &response) override;
     PropertyList Fragment(const Property &prop) override;
 
 private:
@@ -30,4 +30,4 @@ private:
 };
 }  // namespace Protocol
 
-#endif  // FBS_PROTOCOL_H
+#endif  // FATEK_ASCII_PROTOCOL_H

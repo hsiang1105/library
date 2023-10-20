@@ -20,12 +20,12 @@ public:
     int TypeNumber(int index = 0) const;
     int SubAddress(int index = 0) const;
     int UserValue(int index = 0) const;
-    ByteArray UserData(int index = 0) const;
+    VecU8 UserData(int index = 0) const;
 
     void SetTypeNumber(int number, int index = 0);
     void SetSubAddress(int address, int index = 0);
     void SetUserValue(int number, int index = 0);
-    void SetUserData(const ByteArray &data, int index = 0);
+    void SetUserData(const VecU8 &data, int index = 0);
 
 private:
     ElementExtensionData *d_;
@@ -70,7 +70,7 @@ private:
 }  // namespace Protocol
 
 #ifndef ElementArray
-using ElementArray = std::vector<Protocol::Element>;
+using ElementList = std::vector<Protocol::Element>;
 #endif
 
 #endif  // PROTOCOL_ELEMENT_H

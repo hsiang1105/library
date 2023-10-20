@@ -54,43 +54,43 @@ FatekAsciiProtocol::~FatekAsciiProtocol()
     message_map_.clear();
 }
 
-Result FatekAsciiProtocol::GenerateRequest(const Property &prop)
+ReturnData FatekAsciiProtocol::GenerateRequest(const Property &prop)
 {
-    Result result;
+    ReturnData ret;
     FatekAsciiMessage *message = new FatekAsciiMessage;
     if (message->SetProperty(prop)) {
-        result.data = message->Request();
+        ret.data = message->Request();
         message_map_[prop.Id()] = message;
 
     } else {
-        result.status = message->Error();
+        ret.error = message->Error();
         delete message;
     }
 
-    return result;
+    return ret;
 }
 
-Result FatekAsciiProtocol::HandleResponse(const Property &prop,
-                                          const ByteArray &response)
+ReturnData FatekAsciiProtocol::HandleResponse(const Property &prop,
+                                              const VecU8 &response)
 {
-    Result result;
+    ReturnData ret;
     FatekAsciiMessage *message = message_map_.at(prop.Id());
     if (message) {
         if (message->SetResponse(response)) {
-            result.data = message->Result();
+            ret.data = message->Extraction();
         } else {
-            result.status = message->Error();
+            ret.error = message->Error();
         }
 
         message_map_.erase(prop.Id());
         delete message;
 
     } else {
-        result.data.clear();
-        result.status = E_PROPERTY_ERROR;
+        ret.data.clear();
+        ret.error = E_PROPERTY_ERROR;
     }
 
-    return result;
+    return ret;
 }
 
 int FatekAsciiProtocol::ExpectedResponseLength(const Property &prop)
@@ -104,7 +104,7 @@ int FatekAsciiProtocol::ExpectedResponseLength(const Property &prop)
     return expected_resp_len;
 }
 
-bool FatekAsciiProtocol::IsTerminated(const ByteArray &response)
+bool FatekAsciiProtocol::IsTerminated(const VecU8 &response)
 {
     FatekAsciiMessage message;
     if (message.IsTerminated(response)) {
@@ -170,7 +170,7 @@ PropertyList FatekAsciiProtocol::fragmentBatchWrite(const Property &prop)
     // split element if data bytes of element exceed frament_len
     // ("M", 0, 16, 400, 400, false) ->
     // ("M", 0, 16, 256, 256, false), ("M", 256, 16, 144, 144, false)
-    ElementArray split_elements;
+    ElementList split_elements;
     while (count > 0) {
         int split_count = 0;
         int split_data_bytes = 0;
@@ -192,18 +192,18 @@ PropertyList FatekAsciiProtocol::fragmentBatchWrite(const Property &prop)
 
     // combine split element and split data into new property list
     PropertyList prop_list;
-    ByteArray data = prop.Data();
+    VecU8 data = prop.Data();
     int data_offset = 0;
     for (const Element &split_element : split_elements) {
         // create split property
         Property split_prop(prop);
-        split_prop.SetElements(ElementArray(1, split_element));
+        split_prop.SetElements(ElementList(1, split_element));
 
         if (!data.empty()) {
-            ByteArray split_data;
+            VecU8 split_data;
             auto begin = data.begin() + data_offset;
             auto end = begin + split_element.DataBytes();
-            split_data = ByteArray(begin, end);
+            split_data = VecU8(begin, end);
             data_offset += split_element.DataBytes();
             split_prop.SetData(split_data);
         }
@@ -221,7 +221,7 @@ PropertyList FatekAsciiProtocol::fragmentRandomRead(const Property &prop)
 
 PropertyList FatekAsciiProtocol::fragmentRandomWrite(const Property &prop)
 {
-    ElementArray split_elements;
+    ElementList split_elements;
     for (const Element &element : prop.Elements()) {
         std::string type = element.Type();
         int addr = element.Address();
@@ -248,8 +248,8 @@ PropertyList FatekAsciiProtocol::fragmentRandomWrite(const Property &prop)
 
     // combine split element and split data into new property list
     PropertyList prop_list;
-    ElementArray tmp_elements;
-    ByteArray data = prop.Data();
+    ElementList tmp_elements;
+    VecU8 data = prop.Data();
     auto data_begin = data.begin();
     int tmp_data_bytes;
     for (const Element &split_element : split_elements) {
@@ -263,9 +263,9 @@ PropertyList FatekAsciiProtocol::fragmentRandomWrite(const Property &prop)
             split_prop.SetElements(tmp_elements);
 
             if (!data.empty()) {
-                ByteArray split_data;
+                VecU8 split_data;
                 auto data_end = data_begin + tmp_data_bytes;
-                split_data = ByteArray(data_begin, data_end);
+                split_data = VecU8(data_begin, data_end);
                 split_prop.SetData(split_data);
             }
 
@@ -280,7 +280,7 @@ PropertyList FatekAsciiProtocol::fragmentRandomWrite(const Property &prop)
     return prop_list;
 }
 
-PROTOCOL_API AbstractProtocol *createProtocol()
+PROTOCOL_API AbstractProtocol *InitializeProtocol()
 {
     return static_cast<AbstractProtocol *>(new FatekAsciiProtocol());
 }

@@ -12,7 +12,7 @@ FatekAsciiMessage::FatekAsciiMessage()
 
 FatekAsciiMessage::~FatekAsciiMessage() {}
 
-bool FatekAsciiMessage::IsTerminated(const ByteArray &response)
+bool FatekAsciiMessage::IsTerminated(const VecU8 &response)
 {
     if ((response.front() == E_STX) && (response.back() == E_ETX)) {
         return true;
@@ -32,7 +32,7 @@ bool FatekAsciiMessage::composePayload()
     bool res = false;
     switch (prop_.Function()) {
         case E_FUNC_RAMDOM_READ_VALUES:
-        case E_FUNC_MIX_READ_VALUES:       
+        case E_FUNC_MIX_READ_VALUES:
             res = composeMixRead();
             break;
 
@@ -90,8 +90,8 @@ bool FatekAsciiMessage::composeTrailer()
     uint8_t csum =
         Checksum(reinterpret_cast<char *>(request_.data()), 0, request_.size());
 
-    ByteArray array = Value2Array(csum, BYTE_SIZE, E_BE, true);
-    request_.insert(request_.end(), array.begin(), array.end());
+    VecU8 data = Value2Data(csum, BYTE_SIZE, E_BE, true);
+    request_.insert(request_.end(), data.begin(), data.end());
     request_.push_back(E_ETX);
     return true;
 }
@@ -136,10 +136,10 @@ bool FatekAsciiMessage::verifyFormat()
     int cal_offset = 0;
     int cal_len = resp_len - kResponseTrailerLen;
     uint8_t cal_csum = Checksum(start, cal_offset, cal_len) & 0xFF;
-    ByteArray array(response_.begin() + cal_offset,
-                    response_.begin() + cal_offset + cal_len);
+    VecU8 data(response_.begin() + cal_offset,
+               response_.begin() + cal_offset + cal_len);
 
-    uint8_t csum = Array2Value(array, BYTE_SIZE, E_BE, true);
+    uint8_t csum = Data2Value(data, BYTE_SIZE, E_BE, true);
     if (csum != cal_csum) {
         error_ = E_INVALID_ERROR_CHECK;
         return false;
@@ -176,31 +176,31 @@ bool FatekAsciiMessage::checkException()
     return true;
 }
 
-bool FatekAsciiMessage::decomposePayload()
+bool FatekAsciiMessage::extractPayload()
 {
     bool res = false;
     switch (prop_.Function()) {
         case E_FUNC_MIX_READ_VALUES:
         case E_FUNC_BATCH_READ_VALUES:
         case E_FUNC_BATCH_READ_ENABLE_STATE:
-            res = decomposeRead();
+            res = extractRead();
             break;
 
         case E_FUNC_MIX_WRITE_VALUES:
         case E_FUNC_BATCH_WRITE_VALUES:
         case E_FUNC_BATCH_WRITE_ENABLE_STATE:
-            res = decomposeWrite();
+            res = extractWrite();
             break;
 
         case E_FUNC_READ_BRIEF_STATUS:
         case E_FUNC_CONTROL_RUN:
         case E_FUNC_CONTROL_STOP:
         case E_FUNC_READ_DETAILED_STATUS:
-            res = decomposeCommon();
+            res = extractCommon();
             break;
 
         case E_FUNC_LOOPBACK:
-            res = decomposeLoopback();
+            res = extractLoopback();
             break;
         default:
             error_ = E_FUNCTION_ERROR;
@@ -229,12 +229,12 @@ std::string FatekAsciiMessage::getTypeName(const Element &element)
     return type;
 }
 
-void FatekAsciiMessage::appendValue(ByteArray &result, uint32_t value, int size)
+void FatekAsciiMessage::appendValue(VecU8 &result, uint32_t value, int size)
 {
     AppendValue(result, value, size, E_BE, true);
 }
 
-void FatekAsciiMessage::appendString(ByteArray &result, const std::string &str)
+void FatekAsciiMessage::appendString(VecU8 &result, const std::string &str)
 {
     int size = str.size();
     for (int i = 0; i < size; i++) {
@@ -244,7 +244,7 @@ void FatekAsciiMessage::appendString(ByteArray &result, const std::string &str)
     }
 }
 
-void FatekAsciiMessage::appendAddress(ByteArray &result, int addr, int addr_len)
+void FatekAsciiMessage::appendAddress(VecU8 &result, int addr, int addr_len)
 {
     while (addr_len) {
         int order = pow(10, addr_len - 1);
@@ -332,7 +332,7 @@ bool FatekAsciiMessage::composeMixWrite()
     int offset = 0;
     for (const Element &element : prop_.Elements()) {
         std::string type = getTypeName(element);
-        ByteArray data = prop_.Data();
+        VecU8 data = prop_.Data();
         int component_len = 0;
         int addr_len = 0;
 
@@ -456,7 +456,7 @@ bool FatekAsciiMessage::composeBatchWrite()
         return false;
     }
 
-    ByteArray data = prop_.Data();
+    VecU8 data = prop_.Data();
     std::string type = getTypeName(element);
     int count = element.Count();
 
@@ -587,11 +587,11 @@ bool FatekAsciiMessage::composeBatchWriteState()
     uint8_t cmd = E_CMD_CONTROL_SINGLE_DISC;
     appendValue(request_, cmd);
 
-    ByteArray data = prop_.Data();
+    VecU8 data = prop_.Data();
     if (data.front()) {
-        result_.push_back(Hex2Ascii(E_CONTROL_ENABLE));
+        request_.push_back(Hex2Ascii(E_CONTROL_ENABLE));
     } else {
-        result_.push_back(Hex2Ascii(E_CONTROL_DISABLE));
+        request_.push_back(Hex2Ascii(E_CONTROL_DISABLE));
     }
 
     std::string type = getTypeName(element);
@@ -639,9 +639,9 @@ bool FatekAsciiMessage::composeControlRun(bool run)
     appendValue(request_, cmd);
 
     if (run) {
-        result_.push_back(Hex2Ascii(E_RUN));
+        request_.push_back(Hex2Ascii(E_RUN));
     } else {
-        result_.push_back(Hex2Ascii(E_STOP));
+        request_.push_back(Hex2Ascii(E_STOP));
     }
 
     expected_resp_len_ = kResponseHeaderLen + kResponseTrailerLen;
@@ -651,7 +651,7 @@ bool FatekAsciiMessage::composeControlRun(bool run)
 
 bool FatekAsciiMessage::composeLoopback()
 {
-    ByteArray data = prop_.Data();
+    VecU8 data = prop_.Data();
     if (data.empty()) {
         error_ = E_INVALID_VALUE;
         return false;
@@ -668,14 +668,14 @@ bool FatekAsciiMessage::composeLoopback()
     return true;
 }
 
-bool FatekAsciiMessage::decomposeRead()
+bool FatekAsciiMessage::extractRead()
 {
     int offset = kResponseHeaderLen;
     for (const Element &element : prop_.Elements()) {
         switch (element.Databits()) {
             case ONE_BIT:
                 for (int i = 0; i < element.Count(); ++i) {
-                    result_.push_back(Ascii2Hex(response_.at(offset)));
+                    extraction_.push_back(Ascii2Hex(response_.at(offset)));
                     offset += BYTE_SIZE;
                 }
                 break;
@@ -683,11 +683,11 @@ bool FatekAsciiMessage::decomposeRead()
             case WORD_BITS:
                 for (int i = 0; i < element.Count(); ++i) {
                     int unit_len = WORD_SIZE << 1;
-                    ByteArray array(response_.begin() + offset,
-                                    response_.begin() + offset + unit_len);
+                    VecU8 data(response_.begin() + offset,
+                               response_.begin() + offset + unit_len);
 
-                    uint16_t value = Array2Value(array, WORD_SIZE, E_BE, true);
-                    appendValue(result_, value, WORD_SIZE);
+                    uint16_t value = Data2Value(data, WORD_SIZE, E_BE, true);
+                    appendValue(extraction_, value, WORD_SIZE);
 
                     offset += unit_len;
                 }
@@ -696,11 +696,11 @@ bool FatekAsciiMessage::decomposeRead()
             case DWORD_BITS:
                 for (int i = 0; i < element.Count(); ++i) {
                     int unit_len = DWORD_SIZE << 1;
-                    ByteArray array(response_.begin() + offset,
-                                    response_.begin() + offset + unit_len);
+                    VecU8 data(response_.begin() + offset,
+                               response_.begin() + offset + unit_len);
 
-                    uint16_t value = Array2Value(array, DWORD_SIZE, E_BE, true);
-                    appendValue(result_, value, DWORD_SIZE);
+                    uint16_t value = Data2Value(data, DWORD_SIZE, E_BE, true);
+                    appendValue(extraction_, value, DWORD_SIZE);
 
                     offset += unit_len;
                 }
@@ -716,7 +716,7 @@ bool FatekAsciiMessage::decomposeRead()
     return true;
 }
 
-bool FatekAsciiMessage::decomposeWrite()
+bool FatekAsciiMessage::extractWrite()
 {
     int resp_len = response_.size();
     if (resp_len == (kResponseHeaderLen + kResponseTrailerLen)) {
@@ -726,7 +726,7 @@ bool FatekAsciiMessage::decomposeWrite()
     return false;
 }
 
-bool FatekAsciiMessage::decomposeCommon()
+bool FatekAsciiMessage::extractCommon()
 {
     // STX(1), STN(2), CMD(2), ERR(1), data, CSUM(2), ETX(1)
     int resp_len = response_.size();
@@ -734,19 +734,19 @@ bool FatekAsciiMessage::decomposeCommon()
     int unit_len = BYTE_SIZE << 1;
 
     for (int i = 0; i < data_len; i += unit_len) {
-        ByteArray array(unit_len, 0);
-        memcpy(array.data(),
+        VecU8 data(unit_len, 0);
+        memcpy(data.data(),
                response_.data() + kResponseHeaderLen + i,
                unit_len);
 
-        uint8_t value = Array2Value(array, BYTE_SIZE, E_BE, true);
-        result_.push_back(value);
+        uint8_t value = Data2Value(data, BYTE_SIZE, E_BE, true);
+        extraction_.push_back(value);
     }
 
     return true;
 }
 
-bool FatekAsciiMessage::decomposeLoopback()
+bool FatekAsciiMessage::extractLoopback()
 {
     // STX(1), STN(2), CMD(2), data, CSUM(2), ETX(1)
     int resp_len = response_.size();
@@ -754,7 +754,7 @@ bool FatekAsciiMessage::decomposeLoopback()
 
     for (int i = 0; i < data_len; ++i) {
         uint8_t data = response_.at(kRequestHeaderLen + i);
-        result_.push_back(data);
+        extraction_.push_back(data);
     }
 
     return true;

@@ -12,13 +12,13 @@ public:
     virtual ~AbstractMessage();
 
     virtual bool SetProperty(const Property &prop);
-    virtual bool SetResponse(const ByteArray &response);
-    virtual bool IsTerminated(const ByteArray &response);
+    virtual bool SetResponse(const VecU8 &response);
+    virtual bool IsTerminated(const VecU8 &response);
 
     int Error() const { return error_; }
-    ByteArray Request() const { return request_; }
-    ByteArray Result() const { return result_; }
     int ExpectedResponseLength() const { return expected_resp_len_; }
+    VecU8 Request() const { return request_; }
+    VecU8 Extraction() const { return extraction_; }
 
 protected:
     virtual bool composeHeader() = 0;
@@ -27,15 +27,15 @@ protected:
 
     virtual bool verifyFormat() = 0;
     virtual bool checkException() = 0;
-    virtual bool decomposePayload() = 0;
+    virtual bool extractPayload() = 0;
 
 protected:
     int error_;
     int expected_resp_len_;
     Property prop_;
-    ByteArray request_;
-    ByteArray response_;
-    ByteArray result_;
+    VecU8 request_;
+    VecU8 response_;
+    VecU8 extraction_;
 };
 
 }  // namespace Protocol

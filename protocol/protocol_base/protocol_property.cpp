@@ -18,8 +18,8 @@ public:
     std::string name;
     uint32_t function;
     int station;
-    ElementArray elements;
-    std::map<int, ByteArray> data_map;
+    ElementList elements;
+    std::map<int, VecU8> data_map;
     std::map<int, int> user_value_map;
 };
 
@@ -83,7 +83,7 @@ uint32_t Property::Function() const
     return d_->function;
 }
 
-ElementArray Property::Elements() const
+ElementList Property::Elements() const
 {
     return d_->elements;
 }
@@ -97,9 +97,9 @@ bool Property::HasData(int role) const
     return false;
 }
 
-ByteArray Property::Data(int role) const
+VecU8 Property::Data(int role) const
 {
-    ByteArray data;
+    VecU8 data;
     if (d_->data_map.find(role) != d_->data_map.end())
         data = d_->data_map.at(role);
 
@@ -135,12 +135,12 @@ void Property::SetFunction(uint32_t function)
     d_->function = function;
 }
 
-void Property::SetElements(const ElementArray &elements)
+void Property::SetElements(const ElementList &elements)
 {
     d_->elements = elements;
 }
 
-void Property::SetData(const ByteArray &data, int role)
+void Property::SetData(const VecU8 &data, int role)
 {
     d_->data_map[role] = data;
 }
@@ -148,11 +148,6 @@ void Property::SetData(const ByteArray &data, int role)
 void Property::SetUserValue(int value, int index)
 {
     d_->user_value_map[index] = value;
-}
-
-Result::Result()
-{
-    this->status = E_NO_ERROR;
 }
 
 }  // namespace Protocol

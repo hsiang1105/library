@@ -4,29 +4,29 @@
 #include <stdint.h>
 #include <vector>
 
-#define _UNUSED(x)      (void)x;
+#define _UNUSED(x) (void)x;
 
 // data bytes
-#define BYTE_SIZE       1
-#define WORD_SIZE       2
-#define DWORD_SIZE      4
-#define QWORD_SIZE      8
+#define BYTE_SIZE 1
+#define WORD_SIZE 2
+#define DWORD_SIZE 4
+#define QWORD_SIZE 8
 
 // databits
-#define ONE_BIT         1
-#define BYTE_BITS       8
-#define WORD_BITS       16
-#define DWORD_BITS      32
-#define QWORD_BITS      64
+#define ONE_BIT 1
+#define BYTE_BITS 8
+#define WORD_BITS 16
+#define DWORD_BITS 32
+#define QWORD_BITS 64
 
 // number base
-#define BIN_BASE    2   // binary
-#define OCT_BASE    8   // octal
-#define DEC_BASE    10  // decimal
-#define HEX_BASE    16  // hexadecimal
+#define BIN_BASE 2  // binary
+#define OCT_BASE 8  // octal
+#define DEC_BASE 10  // decimal
+#define HEX_BASE 16  // hexadecimal
 
-#ifndef ByteArray
-using ByteArray = std::vector<uint8_t>;
+#ifndef VecU8
+using VecU8 = std::vector<uint8_t>;
 #endif
 
 namespace Protocol {
@@ -137,46 +137,43 @@ enum ErrorCode
     // no error
     E_NO_ERROR = 0x00000000,
     // property error
-    E_PROPERTY_ERROR = 0xE0000001,
+    E_PROPERTY_ERROR = 0x20010001,
     // property function error
-    E_FUNCTION_ERROR = 0xE0000002,
+    E_FUNCTION_ERROR = 0x20010002,
     // property fragment error
-    E_FRAGMENT_ERROR = 0xE0000003,
+    E_FRAGMENT_ERROR = 0x20010003,
     // invalid message header
-    E_INVALID_HEADER = 0xE1000001,
+    E_INVALID_HEADER = 0x20020001,
     // invalid message trailer
-    E_INVALID_TRAILER = 0xE1000002,
+    E_INVALID_TRAILER = 0x20020002,
     // invalid message command
-    E_INVALID_COMMAND = 0xE1000003,
+    E_INVALID_COMMAND = 0x20020003,
     // invalid data address
-    E_INVALID_ADDRESS = 0xE1000004,
+    E_INVALID_ADDRESS = 0x20020004,
     // invalid data count
-    E_INVALID_COUNT = 0xE1000005,
+    E_INVALID_COUNT = 0x20020005,
     // invalid data value
-    E_INVALID_VALUE = 0xE1000006,
+    E_INVALID_VALUE = 0x20020006,
     // invalid error check value
-    E_INVALID_ERROR_CHECK = 0xE1000007,
+    E_INVALID_ERROR_CHECK = 0x20020007,
     // invalid message parameter
-    E_INVALID_PARAMETER = 0xE1000008,
+    E_INVALID_PARAMETER = 0x20020008,
     // invalid message length
-    E_INVALID_MESSAGE_LENGTH = 0xE1000009,
+    E_INVALID_MESSAGE_LENGTH = 0x20020009,
     // protocol exception code base
     // return (E_EXCEPTION_ERROR | excepttion code)
-    E_EXCEPTION_ERROR = 0xEE000000,
+    E_EXCEPTION_ERROR = 0x20040000,
     // user error base
     // return (E_USER_ERROR | user defined error)
-    E_USER_ERROR = 0xEF000000,
+    E_USER_ERROR = 0x20080000,
 };
 
 enum Interface
 {
     E_NO_INTERFACE,
-    E_SERIAL,
+    E_SERIAL_PORT,
     E_ETHERNET,
-    E_USB,
-    E_SIMULATION,
-    E_CLOUD,
-    E_USER_INTERFACE = 0x1000
+    E_SIMULATOR = 0xFF
 };
 
 enum ParameterType
@@ -187,19 +184,22 @@ enum ParameterType
     E_USER_PARAMETER = 0x1000
 };
 
+struct ReturnData
+{
+    ReturnData();
+    VecU8 data;
+    int error;
+};
+
 uint8_t Ascii2Hex(uint8_t ascii);
 uint8_t Hex2Ascii(uint8_t hex);
-ByteArray Value2Array(uint32_t value,
-                      int size,
-                      ByteOrder endian,
-                      bool ascii_flag);
+VecU8 Value2Data(uint32_t value, int size, ByteOrder endian, bool ascii_flag);
+uint32_t Data2Value(const VecU8 &data,
+                    int size,
+                    ByteOrder endian,
+                    bool ascii_flag);
 
-uint32_t Array2Value(const ByteArray &array,
-                     int size,
-                     ByteOrder endian,
-                     bool ascii_flag);
-
-void AppendValue(ByteArray &result,
+void AppendValue(VecU8 &data,
                  uint32_t value,
                  int size,
                  ByteOrder endian,
@@ -207,6 +207,6 @@ void AppendValue(ByteArray &result,
 
 uint16_t Checksum(const char *start, int offset, int len);
 uint16_t CRC16(const char *start, int offset, int len);
-}
+}  // namespace Protocol
 
 #endif  // PROTOCOL_H

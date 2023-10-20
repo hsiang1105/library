@@ -50,6 +50,12 @@ uint8_t g_modbus_crc_lo[] =
      0x41, 0x81, 0x80, 0x40};
 }  // namespace
 
+Protocol::ReturnData::ReturnData()
+{
+    this->data = VecU8();
+    this->error = E_NO_ERROR;
+}
+
 uint8_t Protocol::Ascii2Hex(uint8_t ascii)
 {
     uint8_t hex = 0;
@@ -74,13 +80,13 @@ uint8_t Protocol::Hex2Ascii(uint8_t hex)
     return ascii;
 }
 
-ByteArray Protocol::Value2Array(uint32_t value,
-                                int size,
-                                ByteOrder endian,
-                                bool ascii_flag)
+VecU8 Protocol::Value2Data(uint32_t value,
+                           int size,
+                           ByteOrder endian,
+                           bool ascii_flag)
 {
-    int array_len = (ascii_flag) ? (size << 1) : size;
-    ByteArray array(array_len, 0);
+    int data_len = (ascii_flag) ? (size << 1) : size;
+    VecU8 data(data_len, 0);
     int offset = 0;
     for (int i = 0; i < size; ++i) {
         uint8_t tmp = 0;
@@ -93,36 +99,36 @@ ByteArray Protocol::Value2Array(uint32_t value,
         tmp = (value >> shift) & 0xFF;
 
         if (ascii_flag) {
-            array[offset++] = Hex2Ascii((tmp >> 4) & 0x0F);
-            array[offset++] = Hex2Ascii(tmp & 0xF);
+            data[offset++] = Hex2Ascii((tmp >> 4) & 0x0F);
+            data[offset++] = Hex2Ascii(tmp & 0xF);
         } else {
-            array[offset++] = tmp;
+            data[offset++] = tmp;
         }
     }
 
-    return array;
+    return data;
 }
 
-uint32_t Protocol::Array2Value(const ByteArray &array,
-                               int size,
-                               ByteOrder endian,
-                               bool ascii_flag)
+uint32_t Protocol::Data2Value(const VecU8 &data,
+                              int size,
+                              ByteOrder endian,
+                              bool ascii_flag)
 {
     uint32_t value = 0;
-    int array_len = (ascii_flag) ? (size << 1) : size;
-    if (array_len > (int)array.size())
+    int data_len = (ascii_flag) ? (size << 1) : size;
+    if (data_len > (int)data.size())
         return value;
 
     int i = 0;
-    while (i < array_len) {
+    while (i < data_len) {
         for (int j = 0; j < size; ++j) {
             uint8_t tmp = 0;
             int shift = 0;
             if (ascii_flag) {
-                tmp = (Ascii2Hex(array[i++]) << 4) & 0xF0;
-                tmp |= Ascii2Hex(array[i++]);
+                tmp = (Ascii2Hex(data[i++]) << 4) & 0xF0;
+                tmp |= Ascii2Hex(data[i++]);
             } else {
-                tmp = array[i++];
+                tmp = data[i++];
             }
 
             if (endian == E_BE)
@@ -137,14 +143,14 @@ uint32_t Protocol::Array2Value(const ByteArray &array,
     return value;
 }
 
-void Protocol::AppendValue(ByteArray &result,
+void Protocol::AppendValue(VecU8 &data,
                            uint32_t value,
                            int size,
                            Protocol::ByteOrder endian,
                            bool ascii_flag)
 {
-    ByteArray array = Value2Array(value, size, endian, ascii_flag);
-    result.insert(result.end(), array.begin(), array.end());
+    VecU8 new_data = Value2Data(value, size, endian, ascii_flag);
+    data.insert(data.end(), new_data.begin(), new_data.end());
 }
 
 uint16_t Protocol::Checksum(const char *start, int offset, int len)

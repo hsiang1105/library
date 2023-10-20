@@ -17,14 +17,14 @@ class AbstractProtocol
 public:
     virtual ~AbstractProtocol();
 
-    virtual Result GenerateRequest(const Protocol::Property &prop) = 0;
-    virtual Result HandleResponse(const Property &prop,
-                                  const ByteArray &response) = 0;
+    virtual ReturnData GenerateRequest(const Protocol::Property &prop) = 0;
+    virtual ReturnData HandleResponse(const Property &prop,
+                                      const VecU8 &response) = 0;
 
     virtual int ExpectedResponseLength(const Property &prop);
-    virtual bool IsTerminated(const ByteArray &response);
+    virtual bool IsTerminated(const VecU8 &response);
     virtual PropertyList Fragment(const Property &prop);
-    virtual Result Simulate(const Property &prop);
+    virtual ReturnData Simulate(const Property &prop);
 
     int Parameter(int type) const;
     void SetParameter(int param, int type);
@@ -35,6 +35,6 @@ protected:
 
 }  // namespace Protocol
 
-extern "C" PROTOCOL_API Protocol::AbstractProtocol *CreateProtocol();
+extern "C" PROTOCOL_API Protocol::AbstractProtocol *InitializeProtocol();
 
 #endif  // ABSTRACT_PROTOCOL_H

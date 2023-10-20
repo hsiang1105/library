@@ -28,15 +28,15 @@ bool AbstractMessage::SetProperty(const Property &prop)
     return false;
 }
 
-bool AbstractMessage::SetResponse(const ByteArray &response)
+bool AbstractMessage::SetResponse(const VecU8 &response)
 {
     error_ = E_NO_ERROR;
-    result_.clear();
+    extraction_.clear();
     response_ = response;
 
     if (verifyFormat()) {
         if (checkException()) {
-            if (decomposePayload()) {
+            if (extractPayload()) {
                 return true;
             }
         }
@@ -45,7 +45,7 @@ bool AbstractMessage::SetResponse(const ByteArray &response)
     return false;
 }
 
-bool AbstractMessage::IsTerminated(const ByteArray &response)
+bool AbstractMessage::IsTerminated(const VecU8 &response)
 {
     _UNUSED(response)
     return false;

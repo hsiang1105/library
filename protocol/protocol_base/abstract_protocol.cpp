@@ -4,19 +4,19 @@ namespace Protocol {
 
 AbstractProtocol::~AbstractProtocol() {}
 
-int AbstractProtocol::ExpectedResponseLength(const Protocol::Property &prop)
+int AbstractProtocol::ExpectedResponseLength(const Property &prop)
 {
     _UNUSED(prop)
     return 0;
 }
 
-bool AbstractProtocol::IsTerminated(const ByteArray &response)
+bool AbstractProtocol::IsTerminated(const VecU8 &response)
 {
     _UNUSED(response)
     return false;
 }
 
-PropertyList AbstractProtocol::Fragment(const Protocol::Property &prop)
+PropertyList AbstractProtocol::Fragment(const Property &prop)
 {
     PropertyList prop_list;
     prop_list.push_back(prop);
@@ -24,10 +24,10 @@ PropertyList AbstractProtocol::Fragment(const Protocol::Property &prop)
     return prop_list;
 }
 
-Protocol::Result AbstractProtocol::Simulate(const Protocol::Property &prop)
+ReturnData AbstractProtocol::Simulate(const Property &prop)
 {
     _UNUSED(prop)
-    return Protocol::Result();
+    return ReturnData();
 }
 
 int AbstractProtocol::Parameter(int type) const

@@ -11,7 +11,7 @@ public:
     std::map<int, int> type_no_map;
     std::map<int, int> sub_addr_map;
     std::map<int, int> user_value_map;
-    std::map<int, ByteArray> user_data_map;
+    std::map<int, VecU8> user_data_map;
 };
 
 class ElementData
@@ -90,9 +90,9 @@ int ElementExtension::UserValue(int index) const
     return number;
 }
 
-ByteArray ElementExtension::UserData(int index) const
+VecU8 ElementExtension::UserData(int index) const
 {
-    ByteArray data;
+    VecU8 data;
     if (d_->user_data_map.find(index) != d_->user_data_map.end())
         data = d_->user_data_map.at(index);
 
@@ -114,7 +114,7 @@ void ElementExtension::SetUserValue(int number, int index)
     d_->user_value_map[index] = number;
 }
 
-void ElementExtension::SetUserData(const ByteArray &data, int index)
+void ElementExtension::SetUserData(const VecU8 &data, int index)
 {
     d_->user_data_map[index] = data;
 }
