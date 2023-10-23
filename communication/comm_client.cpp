@@ -39,6 +39,8 @@ public:
       , timeout(5000)
       , retry(2)
       , delay(0)
+      ,is_record_mode_(true)
+      ,is_hex_protocol_(true)
     {
     }
 
@@ -99,6 +101,9 @@ public:
     int timeout;
     int retry;
     int delay;
+
+    bool is_record_mode_;
+    bool is_hex_protocol_;
 };
 
 Client::Client(const Connection &conn, QObject *parent)
@@ -209,6 +214,8 @@ bool Client::createProtocol()
 
 bool Client::createClient()
 {
+    recordInfo(*d_->conn); //record connection
+
     QString message;
     switch (d_->conn->Type()) {
         case E_SERIAL: {
@@ -316,17 +323,20 @@ int Client::send(const QByteArray &ba)
         // clear buffer before sending
         int buff_len = io->bytesAvailable();
         if (buff_len) {
-            io->readAll();
+            QByteArray ba = io->readAll();
+            recordData(ba, "CLR");
         }
 
         io->write(ba);
         if (!io->waitForBytesWritten(d_->timeout)) {
             qDebug() << "[Client] send timeout!";
             d_->error = E_CLIENT_TIMEOUT;
+            recordError("SEND");
         }
 
     } else {
         d_->error = E_CLIENT_OPEN_FAILED;
+        recordError("SEND");
     }
 
     return d_->error;
@@ -379,6 +389,7 @@ int Client::receive(QByteArray &ba, int expected_recv_len)
         if (timeout_count >= d_->timeout) {
             qDebug() << "[Client] receive timeout!";
             d_->error = E_CLIENT_TIMEOUT;
+            recordError("RCV");
 
         } else {
             // check receive
@@ -390,13 +401,17 @@ int Client::receive(QByteArray &ba, int expected_recv_len)
             if (expected_recv_len >= 0) {
                 if (expected_recv_len != ba.length()) {
                     d_->error = E_CLIENT_RECV_FAILED;
+                    recordError("RCV");
                 }
             }
         }
 
+        recordData(ba, "RCV", QString("(%1)").arg(expected_recv_len));
+
     } else {
         d_->error = E_CLIENT_OPEN_FAILED;
-    }
+        recordError("RCV");
+    }    
 
     return d_->error;
 }
@@ -495,6 +510,82 @@ void Client::handleError(int &retry)
             retry = -1;
         }
     }
+}
+
+void Client::recordInfo(const Connection &conn)
+{
+    if (!d_->is_record_mode_) {
+        return;
+    }
+
+    QString text;
+    text.append("===============Connection Setting===============\r\n");
+    text.append(QString("Command Delay:%1\r\n").arg(conn.Delay()));
+    text.append(QString("Timeout:%1\r\n").arg(conn.Timeout()));
+    text.append(QString("Retry Count:%1\r\n").arg(conn.Retry()));
+    text.append("================================================\r\n");
+    text.append(QString("Interface:%1\r\n").arg(conn.ParameterText("Type")));
+
+    if (conn.Type() == E_SERIAL) {
+        const Parameter::Serial *serial = conn.SerialParameter();
+        text.append(QString("Baud Rate:%1\r\n").arg(serial->Baudrate()));
+        text.append(QString("Port Name: COM%1\r\n").arg(serial->Port()));
+        text.append(QString("Data Bits:%1\r\n").arg(serial->DataBits()));
+        text.append(QString("Parity:%1\r\n").arg(serial->Parity()));
+        text.append(QString("Stop Bits:%1\r\n").arg(serial->StopBits()));
+        text.append(QString("Flow Control:%1\r\n").arg(serial->FlowControl()));
+
+    } else if (conn.Type() == E_SOCKET) {
+        const Parameter::Socket *socket = conn.SocketParameter();
+        text.append(QString("IP:%1\r\n").arg(socket->IPv4()));
+        text.append(QString("Port:%1\r\n").arg(socket->Port()));
+    }
+    text.append("================================================\r\n");
+
+    emit SigRecord(text);
+}
+
+void Client::recordError(const QString &prefix)
+{
+    if (!d_->is_record_mode_) {
+        return;
+    }
+
+    QString text;
+    if (!prefix.isEmpty()) {
+        text += prefix;
+    }
+    text += QString("@ [ERROR] 0x%1").arg(d_->error, 8, HEX_BASE);
+
+    emit SigRecord(text);
+}
+
+void Client::recordData(const QByteArray &ba,
+                        const QString &prefix,
+                        const QString &suffix)
+{
+    if (!d_->is_record_mode_) {
+        return;
+    }
+
+    QString text;
+    if (!prefix.isEmpty()) {
+        text += prefix;
+    }
+    text += "@ [DATA] ";
+    if (!suffix.isEmpty()) {
+        text += suffix;
+    }
+
+    text += QString("(%1)").arg(ba.size());
+
+    if (d_->is_hex_protocol_) {
+        text.append(ba.toHex());
+    } else {
+        text.append(ba);
+    }
+
+    emit SigRecord(text);
 }
 
 void Client::Connect()

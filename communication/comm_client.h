@@ -44,6 +44,12 @@ private:
     void postprocess(const Protocol::Property &prop);
     void handleError(int &retry);
 
+    void recordInfo(const Connection &conn);
+    void recordError(const QString &prefix = "");
+    void recordData(const QByteArray &ba,
+                    const QString &prefix = "",
+                    const QString &suffix = "");
+
 private:
     ClientData *d_;
 
@@ -54,6 +60,7 @@ signals:
     void SigResponse(const Protocol::Property &prop, int status);
     void SigRetryOccurred(int retry_times);
     void SigErrorOccurred(const QString &message);
+    void SigRecord(const QString &text);
 
 public slots:
     void Connect();
